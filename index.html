@@ -1,0 +1,1416 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EP 검수 어드민</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&family=JetBrains+Mono:wght@400;600&display=swap');
+:root {
+  --bg:#0f1117; --surface:#1a1d27; --surface2:#22263a;
+  --border:#2e3348; --border2:#3d4260;
+  --accent:#4f7cff; --accent2:#7c5cfc;
+  --green:#22c55e; --red:#ef4444; --yellow:#f59e0b; --blue:#3b82f6; --purple:#a855f7;
+  --text:#e2e8f0; --text2:#94a3b8; --text3:#64748b;
+  --font:'Noto Sans KR',sans-serif; --mono:'JetBrains Mono',monospace;
+  --r:10px; --rs:6px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.6;}
+.layout{display:flex;min-height:100vh;}
+.sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100;}
+.logo{padding:20px 18px 16px;border-bottom:1px solid var(--border);}
+.logo-text{font-size:16px;font-weight:700;color:var(--accent);}
+.logo-sub{font-size:10px;color:var(--text3);margin-top:2px;font-family:var(--mono);}
+.sidebar-nav{flex:1;padding:12px 10px;overflow-y:auto;}
+.nav-section{margin-bottom:20px;}
+.nav-label{font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1px;text-transform:uppercase;padding:0 8px;margin-bottom:6px;}
+.nav-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:var(--rs);cursor:pointer;color:var(--text2);font-size:13px;transition:all .15s;border:none;background:none;width:100%;text-align:left;}
+.nav-item:hover{background:var(--surface2);color:var(--text);}
+.nav-item.active{background:rgba(79,124,255,.15);color:var(--accent);font-weight:500;}
+.main{margin-left:220px;flex:1;}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;}
+.topbar-title{font-size:18px;font-weight:700;}
+.topbar-sub{font-size:12px;color:var(--text3);margin-top:1px;}
+.content{padding:28px;max-width:1200px;}
+.page{display:none;} .page.active{display:block;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:22px;margin-bottom:18px;}
+.card-title{font-size:15px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px;}
+/* Upload */
+.upload-zone{border:2px dashed var(--border2);border-radius:var(--r);padding:40px 32px;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface2);position:relative;}
+.upload-zone:hover,.upload-zone.drag-over{border-color:var(--accent);background:rgba(79,124,255,.06);}
+.upload-zone.uploaded{border-color:var(--green);border-style:solid;background:rgba(34,197,94,.05);}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.upload-icon{font-size:32px;margin-bottom:10px;}
+.upload-title{font-size:15px;font-weight:600;margin-bottom:4px;}
+.upload-sub{font-size:12px;color:var(--text3);}
+/* Encoding badge */
+.enc-badge{display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:var(--rs);border:1px solid var(--border2);background:var(--surface2);font-size:13px;min-height:40px;transition:border-color .2s;}
+/* Form */
+.form-row{display:flex;gap:14px;margin-bottom:16px;flex-wrap:wrap;}
+.form-group{display:flex;flex-direction:column;gap:6px;flex:1;min-width:160px;}
+.form-label{font-size:12px;font-weight:600;color:var(--text2);}
+.form-input,.form-select{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--rs);color:var(--text);padding:9px 12px;font-size:13px;font-family:var(--font);outline:none;transition:border-color .15s;}
+.form-input:focus,.form-select:focus{border-color:var(--accent);}
+.form-select option{background:var(--surface2);}
+textarea.form-input{resize:vertical;min-height:140px;font-family:var(--mono);font-size:12px;}
+/* Tabs */
+.tab-group{display:flex;gap:4px;background:var(--surface2);padding:4px;border-radius:var(--rs);margin-bottom:18px;width:fit-content;}
+.tab-btn{padding:7px 18px;border-radius:5px;border:none;background:none;color:var(--text2);font-size:13px;font-family:var(--font);cursor:pointer;transition:all .15s;font-weight:500;}
+.tab-btn.active{background:var(--accent);color:#fff;}
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:var(--rs);border:none;cursor:pointer;font-size:13px;font-family:var(--font);font-weight:600;transition:all .15s;white-space:nowrap;}
+.btn-primary{background:var(--accent);color:#fff;} .btn-primary:hover{background:#3d6be8;} .btn-primary:disabled{opacity:.4;cursor:not-allowed;}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border2);} .btn-secondary:hover{border-color:var(--accent);color:var(--accent);}
+.btn-danger{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3);} .btn-danger:hover{background:rgba(239,68,68,.25);}
+.btn-sm{padding:5px 12px;font-size:12px;}
+.btn-group{display:flex;gap:8px;flex-wrap:wrap;}
+/* Badge */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;white-space:nowrap;}
+.badge-error{background:rgba(239,68,68,.15);color:var(--red);}
+.badge-warn{background:rgba(245,158,11,.15);color:var(--yellow);}
+.badge-ok{background:rgba(34,197,94,.15);color:var(--green);}
+.badge-manual{background:rgba(168,85,247,.15);color:var(--purple);}
+.badge-info{background:rgba(59,130,246,.15);color:var(--blue);}
+/* Stats */
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:14px;margin-bottom:20px;}
+.stat-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:18px;text-align:center;}
+.stat-num{font-size:28px;font-weight:700;font-family:var(--mono);line-height:1;margin-bottom:6px;}
+.stat-label{font-size:11px;color:var(--text3);font-weight:600;text-transform:uppercase;letter-spacing:.5px;}
+/* Filter */
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;align-items:center;}
+.filter-btn{padding:5px 14px;border-radius:99px;border:1px solid var(--border2);background:none;color:var(--text2);font-size:12px;cursor:pointer;font-family:var(--font);font-weight:500;transition:all .15s;}
+.filter-btn:hover{border-color:var(--accent);color:var(--accent);}
+.filter-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.filter-btn.f-error.active{background:var(--red);border-color:var(--red);}
+.filter-btn.f-warn.active{background:var(--yellow);border-color:var(--yellow);color:#000;}
+.filter-btn.f-ok.active{background:var(--green);border-color:var(--green);color:#000;}
+.filter-btn.f-manual.active{background:var(--purple);border-color:var(--purple);}
+/* Results */
+.result-section{margin-bottom:6px;}
+.result-header{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);cursor:pointer;transition:all .15s;}
+.result-header:hover{border-color:var(--border2);}
+.result-header.open{border-radius:var(--rs) var(--rs) 0 0;border-bottom-color:transparent;}
+.result-header-left{display:flex;align-items:center;gap:10px;font-weight:600;font-size:13px;}
+.result-header-right{display:flex;align-items:center;gap:8px;}
+.result-body{display:none;border:1px solid var(--border);border-top:none;border-radius:0 0 var(--rs) var(--rs);}
+.result-body.open{display:block;}
+.result-detail{padding:14px 16px;font-size:12px;}
+.result-detail p{margin-bottom:6px;color:var(--text2);}
+.sample-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:11px;}
+.sample-table th{background:var(--surface);color:var(--text3);padding:5px 10px;text-align:left;font-weight:600;border-bottom:1px solid var(--border);}
+.sample-table td{padding:5px 10px;border-bottom:1px solid var(--border);color:var(--text2);max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.sample-table tr:last-child td{border-bottom:none;}
+.sample-table .err-val{color:var(--red);}
+/* History */
+.history-list{display:flex;flex-direction:column;gap:10px;}
+.history-item{background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;}
+.history-item:hover{border-color:var(--border2);}
+/* Progress */
+.progress-bar{height:4px;background:var(--border);border-radius:99px;overflow:hidden;margin:10px 0;}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:99px;transition:width .3s;width:0%;}
+/* Misc */
+.flex-between{display:flex;justify-content:space-between;align-items:center;}
+.flex-gap{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.text-sm{font-size:12px;color:var(--text2);}
+.text-xs{font-size:11px;color:var(--text3);}
+.hidden{display:none!important;}
+.mt-4{margin-top:16px;} .mb-2{margin-bottom:8px;}
+/* Toast */
+#toast{position:fixed;bottom:24px;right:24px;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:12px 18px;font-size:13px;z-index:9999;transform:translateY(20px);opacity:0;transition:all .25s;pointer-events:none;}
+#toast.show{transform:translateY(0);opacity:1;}
+#toast.success{border-color:var(--green);color:var(--green);}
+#toast.error{border-color:var(--red);color:var(--red);}
+::-webkit-scrollbar{width:6px;height:6px;}
+::-webkit-scrollbar-track{background:var(--surface);}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+</style>
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-text">EP Inspector</div>
+      <div class="logo-sub">v3.1 · EP 2.0 가이드 기준</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <div class="nav-label">검수</div>
+        <button class="nav-item active" onclick="navigate('inspect')"><span>🔍</span> 검수하기</button>
+        <button class="nav-item" onclick="navigate('result')"><span>📋</span> 검수 결과</button>
+      </div>
+      <div class="nav-section">
+        <div class="nav-label">관리</div>
+        <button class="nav-item" onclick="navigate('history')"><span>🕐</span> 검수 이력</button>
+        <button class="nav-item" onclick="navigate('download')"><span>⬇️</span> 자료 다운로드</button>
+      </div>
+    </nav>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="topbar-title" id="page-title">검수하기</div>
+        <div class="topbar-sub" id="page-sub">EP 파일을 업로드하거나 데이터를 붙여넣어 검수를 시작하세요</div>
+      </div>
+    </div>
+    <div class="content">
+
+      <!-- INSPECT -->
+      <div id="page-inspect" class="page active">
+        <div class="card">
+          <div class="card-title">⚙️ 검수 설정</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">쇼핑몰명</label>
+              <input type="text" id="mall-name" class="form-input" placeholder="예) 현대백화점" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">EP 종류</label>
+              <select id="ep-type" class="form-select">
+                <option value="summary">요약EP (class, update_time 포함)</option>
+                <option value="full">전체EP</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">인코딩 감지 결과</label>
+              <div id="enc-badge" class="enc-badge">
+                <span style="color:var(--text3);font-size:12px;">파일 업로드 시 자동으로 감지됩니다</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">📂 데이터 입력</div>
+          <div class="tab-group">
+            <button class="tab-btn active" id="tab-btn-file" onclick="switchTab('file')">파일 업로드</button>
+            <button class="tab-btn" id="tab-btn-paste" onclick="switchTab('paste')">복사 붙여넣기</button>
+          </div>
+
+          <div id="tab-file">
+            <div class="upload-zone" id="drop-zone">
+              <input type="file" id="file-input" accept=".txt,.tsv,.csv" />
+              <div id="upload-icon" class="upload-icon">📄</div>
+              <div id="upload-title" class="upload-title">파일을 드래그하거나 클릭해서 선택</div>
+              <div id="upload-sub" class="upload-sub">.txt / .tsv 파일 지원 · 탭 구분 텍스트</div>
+            </div>
+          </div>
+
+          <div id="tab-paste" class="hidden">
+            <div class="text-sm mb-2">엑셀이나 메모장에서 복사한 데이터를 아래에 붙여넣으세요 (헤더 행 포함)</div>
+            <textarea id="paste-area" class="form-input" placeholder="id&#9;title&#9;price_pc&#9;...&#10;123&#9;상품명&#9;10000&#9;..."
+              oninput="onPasteInput(this)"></textarea>
+            <div id="paste-info" class="text-sm mt-4 hidden"></div>
+          </div>
+        </div>
+
+        <div class="form-group" style="margin-bottom:16px;">
+          <label class="form-label">검수 코멘트 (선택)</label>
+          <input type="text" id="inspect-comment" class="form-input" placeholder="특이사항이나 메모를 입력하면 이력에 함께 저장됩니다" />
+        </div>
+
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="runInspection()">🔍 검수 시작</button>
+          <button class="btn btn-secondary" onclick="resetAll()">↺ 초기화</button>
+        </div>
+
+        <div id="progress-area" class="hidden mt-4">
+          <div class="text-sm mb-2" id="progress-label">분석 중...</div>
+          <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+        </div>
+      </div>
+
+      <!-- RESULT -->
+      <div id="page-result" class="page">
+        <div class="flex-between mb-4" style="flex-wrap:wrap;gap:10px;">
+          <div>
+            <div style="font-size:18px;font-weight:700;" id="result-title">검수 결과</div>
+            <div class="text-xs" id="result-meta"></div>
+          </div>
+          <div class="btn-group">
+            <button class="btn btn-secondary btn-sm" onclick="toggleAll(true)">모두 펼치기</button>
+            <button class="btn btn-secondary btn-sm" onclick="toggleAll(false)">모두 접기</button>
+            <button class="btn btn-secondary btn-sm" onclick="exportCSV()">⬇ CSV</button>
+            <button class="btn btn-secondary btn-sm" onclick="navigate('inspect')">↩ 다시 검수</button>
+          </div>
+        </div>
+        <div class="stat-grid" id="stat-grid"></div>
+
+        <!-- card_event 카드사 목록 -->
+        <div id="card-panel" class="hidden" style="margin-bottom:16px;">
+          <div class="card" style="margin-bottom:0;">
+            <div class="card-title" style="margin-bottom:10px;">
+              💳 card_event 카드사 목록
+              <span style="font-size:11px;font-weight:400;color:var(--text3);">파일 내 등장한 카드명 · 중복 제거</span>
+            </div>
+            <div id="card-chips" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
+          </div>
+        </div>
+
+        <div class="filter-bar">
+          <span class="text-xs">필터:</span>
+          <button class="filter-btn active" onclick="setFilter(this,'all')">전체</button>
+          <button class="filter-btn f-error" onclick="setFilter(this,'error')">🔴 오류</button>
+          <button class="filter-btn f-warn" onclick="setFilter(this,'warn')">🟡 확인필요</button>
+          <button class="filter-btn f-ok" onclick="setFilter(this,'ok')">✅ 정상</button>
+          <button class="filter-btn f-manual" onclick="setFilter(this,'manual')">🟣 수동검수</button>
+
+        </div>
+        <div id="results-list"></div>
+      </div>
+
+      <!-- HISTORY -->
+      <div id="page-history" class="page">
+        <div class="flex-between mb-4">
+          <div style="font-size:16px;font-weight:700;">검수 이력</div>
+          <button class="btn btn-danger btn-sm" onclick="clearHistory()">전체 삭제</button>
+        </div>
+        <div id="history-list" class="history-list"></div>
+        <div id="history-empty" class="text-sm hidden" style="text-align:center;padding:40px;color:var(--text3);">아직 검수 이력이 없습니다</div>
+      </div>
+
+      <!-- DOWNLOAD -->
+      <div id="page-download" class="page">
+        <div class="card">
+          <div class="card-title">⬇️ 자료 다운로드</div>
+          <div style="display:flex;flex-direction:column;gap:12px;">
+            <div class="flex-between" style="padding:14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);">
+              <div><div style="font-weight:600;margin-bottom:3px;">EP 검수 체크리스트</div><div class="text-xs">EP 2.0 가이드 기준 · 61개 항목 · v3.1</div></div>
+              <button class="btn btn-secondary btn-sm" onclick="showToast('체크리스트 엑셀 파일을 별도로 공유해 주세요','error')">⬇ 다운로드</button>
+            </div>
+            <div class="flex-between" style="padding:14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--rs);">
+              <div><div style="font-weight:600;margin-bottom:3px;">EP 2.0 가이드</div><div class="text-xs">필드 정의 및 형식 가이드 문서</div></div>
+              <button class="btn btn-secondary btn-sm" onclick="showToast('EP 가이드 파일을 별도로 공유해 주세요','error')">⬇ 다운로드</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+// ── STATE ──────────────────────────────────────
+let S = {
+  rawText:'', headers:[], rows:[],
+  mallName:'', epType:'summary', fileName:'',
+  results:[], filter:'all', manualChecks:{}
+};
+
+// ── NAVIGATION ────────────────────────────────
+const PAGE_META = {
+  inspect:  {title:'검수하기',       sub:'EP 파일을 업로드하거나 데이터를 붙여넣어 검수를 시작하세요'},
+  result:   {title:'검수 결과',       sub:'체크리스트 기반 자동 검수 결과입니다'},
+  history:  {title:'검수 이력',       sub:'검수 날짜·파일명·오류건수가 자동으로 기록됩니다'},
+  download: {title:'자료 다운로드',   sub:'체크리스트 및 EP 가이드 파일을 다운로드하세요'},
+};
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelector(`[onclick="navigate('${page}')"]`).classList.add('active');
+  document.getElementById('page-title').textContent = PAGE_META[page].title;
+  document.getElementById('page-sub').textContent   = PAGE_META[page].sub;
+  if (page==='history') renderHistory();
+}
+
+// ── INPUT TABS ────────────────────────────────
+function switchTab(tab) {
+  ['file','paste'].forEach(t => {
+    document.getElementById('tab-btn-'+t).classList.toggle('active', t===tab);
+    document.getElementById('tab-'+t).classList.toggle('hidden', t!==tab);
+  });
+}
+
+// ── DRAG & DROP ───────────────────────────────
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover', e=>{e.preventDefault(); dz.classList.add('drag-over');});
+dz.addEventListener('dragleave', ()=>dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e=>{
+  e.preventDefault(); dz.classList.remove('drag-over');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+document.getElementById('file-input').addEventListener('change', e=>{
+  if (e.target.files[0]) handleFile(e.target.files[0]);
+});
+
+// ── ENCODING DETECT ───────────────────────────
+function detectEncoding(buf) {
+  const b = new Uint8Array(buf);
+  if (b[0]===0xEF && b[1]===0xBB && b[2]===0xBF)
+    return {enc:'UTF-8 (BOM)', isUtf8:true, hasBom:true};
+  let i=0, ok=true;
+  while(i < Math.min(b.length,10000)) {
+    const v=b[i];
+    if(v<0x80){i++;continue;}
+    let seq=0;
+    if((v&0xE0)===0xC0) seq=1;
+    else if((v&0xF0)===0xE0) seq=2;
+    else if((v&0xF8)===0xF0) seq=3;
+    else {ok=false;break;}
+    for(let j=1;j<=seq;j++){
+      if(i+j>=b.length||(b[i+j]&0xC0)!==0x80){ok=false;break;}
+    }
+    if(!ok) break;
+    i+=seq+1;
+  }
+  if(ok) return {enc:'UTF-8', isUtf8:true, hasBom:false};
+  let score=0;
+  for(let k=0;k<Math.min(b.length-1,10000);k++){
+    if(b[k]>=0x81&&b[k]<=0xFE&&b[k+1]>=0x41&&b[k+1]<=0xFE) score++;
+  }
+  if(score>5) return {enc:'EUC-KR', isUtf8:false, hasBom:false};
+  return {enc:'알 수 없음', isUtf8:false, hasBom:false};
+}
+
+function showEncoding(det) {
+  const el = document.getElementById('enc-badge');
+  const {enc, isUtf8, hasBom} = det;
+  if (isUtf8 && !hasBom) {
+    el.innerHTML = `<span style="color:var(--green);font-weight:700;">✅ UTF-8</span><span style="color:var(--text3);font-size:12px;margin-left:6px;">가이드 기준 충족</span>`;
+    el.style.borderColor = 'var(--green)';
+  } else if (hasBom) {
+    el.innerHTML = `<span style="color:var(--yellow);font-weight:700;">⚠️ UTF-8 (BOM 포함)</span><span style="color:var(--text3);font-size:12px;margin-left:6px;">BOM 제거 권장</span>`;
+    el.style.borderColor = 'var(--yellow)';
+  } else if (enc==='EUC-KR') {
+    el.innerHTML = `<span style="color:var(--red);font-weight:700;">🔴 EUC-KR 감지</span><span style="color:var(--text3);font-size:12px;margin-left:6px;">가이드 위반 — UTF-8 재전송 요청 필요 (검수는 계속 가능)</span>`;
+    el.style.borderColor = 'var(--red)';
+  } else {
+    el.innerHTML = `<span style="color:var(--text2);">❓ ${enc}</span>`;
+    el.style.borderColor = 'var(--border2)';
+  }
+}
+
+function resetEncoding() {
+  const el = document.getElementById('enc-badge');
+  el.innerHTML = `<span style="color:var(--text3);font-size:12px;">파일 업로드 시 자동으로 감지됩니다</span>`;
+  el.style.borderColor = 'var(--border2)';
+}
+
+// ── HANDLE FILE ───────────────────────────────
+function handleFile(file) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const buf = e.target.result;
+    const det = detectEncoding(buf);
+    S.fileName = file.name;
+
+    // 디코딩
+    let text;
+    try {
+      text = det.isUtf8
+        ? new TextDecoder('utf-8').decode(buf)
+        : new TextDecoder('euc-kr').decode(buf);
+    } catch(_) {
+      text = new TextDecoder('utf-8', {fatal:false}).decode(buf);
+    }
+    S.rawText = text;
+
+    // 행 수 계산
+    const lineCount = text.split(/\r?\n/).filter(l=>l.trim()).length;
+    const dataRows  = Math.max(0, lineCount - 1);
+
+    // 인코딩 배지 업데이트
+    showEncoding(det);
+
+    // 업로드존 UI 업데이트
+    dz.classList.add('uploaded');
+    document.getElementById('upload-icon').textContent  = '✅';
+    document.getElementById('upload-title').textContent = file.name;
+    document.getElementById('upload-sub').textContent   =
+      `${(file.size/1024).toFixed(1)} KB · 데이터 ${dataRows}행 감지 · 인코딩: ${det.enc}`;
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+// ── PASTE INPUT HANDLER ───────────────────────
+function onPasteInput(el) {
+  const text = el.value.trim();
+  const info = document.getElementById('paste-info');
+  if (!text) { info.classList.add('hidden'); return; }
+  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  const dataRows = Math.max(0, lines.length - 1);
+  info.classList.remove('hidden');
+  info.innerHTML = `<span style="color:var(--green);">✅</span> 데이터 감지 — 헤더 1행 + 데이터 <strong>${dataRows}행</strong>`;
+}
+
+// ── RESET ─────────────────────────────────────
+function resetAll() {
+  S.rawText=''; S.rows=[]; S.headers=[]; S.fileName='';
+
+  // 파일 input 초기화
+  const fi = document.getElementById('file-input');
+  fi.value = '';
+
+  // 업로드존 초기화
+  dz.classList.remove('uploaded', 'drag-over');
+  document.getElementById('upload-icon').textContent  = '📄';
+  document.getElementById('upload-title').textContent = '파일을 드래그하거나 클릭해서 선택';
+  document.getElementById('upload-sub').textContent   = '.txt / .tsv 파일 지원 · 탭 구분 텍스트';
+
+  // 인코딩 배지 초기화
+  resetEncoding();
+
+  // 나머지 폼 초기화
+  document.getElementById('paste-area').value   = '';
+  document.getElementById('paste-info').classList.add('hidden');
+  document.getElementById('mall-name').value    = '';
+  document.getElementById('inspect-comment').value = '';
+  document.getElementById('progress-area').classList.add('hidden');
+  document.getElementById('progress-fill').style.width = '0%';
+
+  showToast('초기화 완료');
+}
+
+// ── PARSE ─────────────────────────────────────
+function parseData(text) {
+  const lines = text.split(/\r?\n/).filter(l=>l.trim());
+  if (lines.length < 2) return false;
+  S.headers = lines[0].split('\t');
+  S.rows = lines.slice(1).map((line,i)=>{
+    const vals = line.split('\t');
+    const obj  = {__row: i+2};
+    S.headers.forEach((h,idx)=>{ obj[h.trim()] = (vals[idx]||'').trim(); });
+    return obj;
+  });
+  return true;
+}
+function gv(row, f) { return (row[f]||'').trim(); }
+function hasField(f) { return S.headers.map(h=>h.trim()).includes(f); }
+
+// ── RUN ───────────────────────────────────────
+function runInspection() {
+  S.mallName = document.getElementById('mall-name').value.trim() || '(미입력)';
+  S.epType   = document.getElementById('ep-type').value;
+  S.comment  = document.getElementById('inspect-comment').value.trim();
+
+  // 붙여넣기 탭이 활성화되어 있는지 확인
+  const pasteTabActive = document.getElementById('tab-btn-paste').classList.contains('active');
+  const text = pasteTabActive
+    ? document.getElementById('paste-area').value
+    : S.rawText;
+
+  if (!text || !text.trim()) { showToast('데이터를 입력해 주세요','error'); return; }
+  if (!parseData(text)) { showToast('파싱 실패: 헤더와 데이터가 필요합니다','error'); return; }
+
+  document.getElementById('progress-area').classList.remove('hidden');
+  animateProgress();
+  setTimeout(()=>{
+    S.results = runChecks();
+    saveHistory();
+    renderResults();
+    document.getElementById('progress-area').classList.add('hidden');
+    navigate('result');
+    showToast('검수 완료!','success');
+  }, 900);
+}
+
+function animateProgress() {
+  let pct=0;
+  const fill   = document.getElementById('progress-fill');
+  const labels = ['파일 구조 분석 중...','필수 필드 검증 중...','형식 검증 중...','논리 오류 검사 중...','결과 정리 중...'];
+  let li=0;
+  const iv = setInterval(()=>{
+    pct = Math.min(pct + Math.random()*15, 95);
+    fill.style.width = pct+'%';
+    if(li<labels.length && pct>li*20) document.getElementById('progress-label').textContent=labels[li++];
+    if(pct>=95) clearInterval(iv);
+  }, 120);
+}
+
+// ── CHECKS ────────────────────────────────────
+function runChecks() {
+  const r=[], isSummary=S.epType==='summary';
+  r.push(...chkFileStructure());
+  r.push(...chkEPFields(isSummary));
+  r.push(...chkRequired(isSummary));
+  r.push(...chkConditional());
+  r.push(...chkFormats());
+  r.push(...chkURLs());
+  r.push(...chkFairTrade());
+  return r;
+}
+
+function mk(id,section,num,title,type,category,message,samples=[],extra='',manualNote='') {
+  return {id,section,num,title,type,category,message,samples,extra,manualNote};
+}
+
+// S1 파일 구조
+function chkFileStructure() {
+  const res=[], hTabCnt=S.headers.length-1;
+  const tabErr=S.rows.filter(r=>(Object.keys(r).length-2)!==hTabCnt);
+  res.push(mk('s1_tab','파일 구조',6,'탭(Tab) 문자 개수 검증',
+    tabErr.length?'error':'ok','auto',
+    tabErr.length?`${tabErr.length}개 행에서 탭 개수 불일치 (헤더:${hTabCnt}개)`:`전체 ${S.rows.length}행 탭 개수 일치`,
+    tabErr.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id')}))));
+
+  const ctrlErr=[];
+  S.rows.forEach(r=>Object.entries(r).forEach(([k,v])=>{
+    if(k==='__row') return;
+    if(/[\r\n\x00-\x08\x0b\x0c\x0e-\x1f]/.test(v)) ctrlErr.push({행:r.__row,필드:k,값:v.substring(0,30)});
+  }));
+  res.push(mk('s1_ctrl','파일 구조',7,'제어 문자 포함 여부',
+    ctrlErr.length?'error':'ok','auto',
+    ctrlErr.length?`${ctrlErr.length}건에서 제어 문자 감지`:'제어 문자 없음',
+    ctrlErr.slice(0,5)));
+  return res;
+}
+
+// S2 EP 필드 비교
+function chkEPFields(isSummary) {
+  const hasCls=hasField('class'), hasUt=hasField('update_time');
+  const type = isSummary ? (!hasCls||!hasUt?'error':'ok') : (hasCls||hasUt?'error':'ok');
+  const msg  = isSummary
+    ? (!hasCls||!hasUt?`요약EP 전용 필드 누락: ${!hasCls?'class ':''} ${!hasUt?'update_time':''}`:'class, update_time 모두 존재')
+    : (hasCls||hasUt?`전체EP에 요약EP 전용 필드 포함: ${hasCls?'class ':''} ${hasUt?'update_time':''}`:'class, update_time 미포함 ✅');
+  return [mk('s2_sys','EP 필드 비교',9,'class / update_time 필드 위치 확인',type,'auto',msg)];
+}
+
+// S3 필수 필드
+function chkRequired(isSummary) {
+  const res=[];
+  const required=['id','title','price_pc','price_mobile','link','image_link','shipping'];
+  if(isSummary) required.push('class','update_time');
+  const missing=required.filter(f=>!hasField(f));
+  res.push(mk('s3_fields','필수 필드',11,'필수 필드 존재 여부',
+    missing.length?'error':'ok','auto',
+    missing.length?`누락 필드: ${missing.join(', ')}`:'모든 필수 필드 존재'));
+
+  ['id','title','price_pc','price_mobile','link','image_link','shipping'].forEach(f=>{
+    if(!hasField(f)) return;
+    const emp=S.rows.filter(r=>!gv(r,f));
+    res.push(mk(`s3_empty_${f}`,'필수 필드',11,`${f} 빈값 확인`,
+      emp.length?'error':'ok','auto',
+      emp.length?`${emp.length}건 빈값`:'빈값 없음',
+      emp.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id')}))));
+  });
+
+  // id: 중복, 금칙어, Data Size 50
+  const idCnt={};
+  S.rows.forEach(r=>{const v=gv(r,'id'); idCnt[v]=(idCnt[v]||0)+1;});
+  const dup=Object.entries(idCnt).filter(([,c])=>c>1);
+  res.push(mk('s3_dup','필수 필드',13,'id 중복 확인',dup.length?'error':'ok','auto',dup.length?`중복 id ${dup.length}개`:'중복 없음',dup.slice(0,5).map(([id,cnt])=>({id,중복횟수:cnt}))));
+  if(hasField('id')) {
+    const idBad=S.rows.filter(r=>/[^\w\-]|[가-힣]/.test(gv(r,'id')));
+    res.push(mk('s3_idchar','필수 필드',14,'id 금칙어 (한글·특수문자 금지)',idBad.length?'error':'ok','auto',idBad.length?`${idBad.length}건 금칙어 감지`:'영문/숫자 조합만 사용',idBad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id')}))));
+    const idSize=S.rows.filter(r=>gv(r,'id').length>50);
+    if(idSize.length) res.push(mk('s3_idsize','필수 필드',14,'id Data Size 확인 (최대 50자)','error','auto',`${idSize.length}건에서 50자 초과`,idSize.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id').substring(0,30),글자수:gv(r,'id').length}))));
+  }
+
+  // title: 접두사, Data Size 200
+  if(hasField('title')) {
+    const pfx=S.rows.filter(r=>/^\[(해외|중고|리퍼|반품|전시|병행수입|구매대행)\]/.test(gv(r,'title')));
+    res.push(mk('s3_prefix','필수 필드',15,'title 접두사 금지 ([해외],[중고] 등)',pfx.length?'warn':'ok','partial',pfx.length?`${pfx.length}건에서 접두사 감지`:'접두사 없음',pfx.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),title:gv(r,'title').substring(0,40)}))));
+    const titleSize=S.rows.filter(r=>gv(r,'title').length>200);
+    if(titleSize.length) res.push(mk('s3_titlesize','필수 필드',15,'title Data Size 확인 (최대 200자)','error','auto',`${titleSize.length}건에서 200자 초과`,titleSize.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),글자수:gv(r,'title').length}))));
+  }
+
+  // price_pc, price_mobile: 1원 이상, Data Size 10자리
+  ['price_pc','price_mobile'].forEach(f=>{
+    if(!hasField(f)) return;
+    const inv=S.rows.filter(r=>{const v=gv(r,f); return v&&(isNaN(parseInt(v))||parseInt(v)<=0);});
+    res.push(mk(`s3_pricemin_${f}`,'필수 필드',16,`${f} 최솟값 확인 (1원 이상, 0원 불가)`,inv.length?'error':'ok','auto',inv.length?`${inv.length}건에서 0 이하 값 감지`:'모두 1원 이상',inv.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),[f]:gv(r,f)}))));
+    const sizeErr=S.rows.filter(r=>gv(r,f).replace('-','').length>10);
+    if(sizeErr.length) res.push(mk(`s3_pricesize_${f}`,'필수 필드',16,`${f} Data Size 확인 (최대 10자리)`,'error','auto',`${sizeErr.length}건에서 10자리 초과`,sizeErr.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),[f]:gv(r,f)}))));
+  });
+
+  // URL Data Size: link/mobile_link 255, image_link/add_image_link 250
+  const urlSizes={link:255,mobile_link:255,image_link:250,add_image_link:250};
+  Object.entries(urlSizes).forEach(([f,max])=>{
+    if(!hasField(f)) return;
+    const bad=S.rows.filter(r=>gv(r,f).length>max);
+    if(bad.length) res.push(mk(`s3_urlsize_${f}`,'필수 필드',54,`${f} Data Size 확인 (최대 ${max}자)`,'warn','auto',`${bad.length}건에서 ${max}자 초과`,bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),글자수:gv(r,f).length}))));
+  });
+  if(hasField('add_image_link')) {
+    const bad=S.rows.filter(r=>{const v=gv(r,'add_image_link'); return v&&v.split('|').length>10;});
+    res.push(mk('s3_addimg_cnt','필수 필드',54,'add_image_link 최대 10개 확인',bad.length?'warn':'ok','auto',bad.length?`${bad.length}건에서 10개 초과`:'정상',bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),개수:gv(r,'add_image_link').split('|').length}))));
+  }
+
+  // category_name 1~4: 필수 확인, Data Size 25, 제어문자
+  if(hasField('category_name1')) {
+    const emp=S.rows.filter(r=>!gv(r,'category_name1'));
+    res.push(mk('s3_cat','필수 필드',17,'category_name1 필수 입력 확인',emp.length?'error':'ok','auto',emp.length?`${emp.length}건 빈값`:'모두 입력됨',emp.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id')}))));
+  }
+  ['category_name1','category_name2','category_name3','category_name4'].forEach(f=>{
+    if(!hasField(f)) return;
+    const sizeErr=S.rows.filter(r=>gv(r,f).length>25);
+    if(sizeErr.length) res.push(mk(`s3_catsize_${f}`,'필수 필드',17,`${f} Data Size 확인 (최대 25자)`,'warn','auto',`${sizeErr.length}건에서 25자 초과`,sizeErr.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),글자수:gv(r,f).length}))));
+    const ctrl=S.rows.filter(r=>gv(r,f)&&/[\t\r\n\x00-\x1f]/.test(gv(r,f)));
+    if(ctrl.length) res.push(mk(`s3_catctrl_${f}`,'필수 필드',17,`${f} 제어문자 포함 여부`,'error','auto',`${ctrl.length}건에서 제어문자 감지`,ctrl.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),[f]:gv(r,f).substring(0,30)}))));
+  });
+
+  // enuri_category: 숫자만, enuri_product_id: 숫자만
+  if(hasField('enuri_category')) {
+    const bad=S.rows.filter(r=>{const v=gv(r,'enuri_category'); return v&&!/^\d+$/.test(v);});
+    res.push(mk('s3_enuricat','필수 필드',17,'enuri_category 숫자만 허용',bad.length?'error':'ok','auto',bad.length?`${bad.length}건에서 숫자 외 값`:'정상',bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),enuri_category:gv(r,'enuri_category')}))));
+  }
+  if(hasField('enuri_product_id')) {
+    const bad=S.rows.filter(r=>{const v=gv(r,'enuri_product_id'); return v&&!/^\d+$/.test(v);});
+    if(bad.length) res.push(mk('s3_enuripid','필수 필드',17,'enuri_product_id 숫자만 허용','warn','auto',`${bad.length}건에서 숫자 외 값`,bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),enuri_product_id:gv(r,'enuri_product_id')}))));
+  }
+
+  // class, update_time (요약EP)
+  if(isSummary && hasField('class')) {
+    const bad=S.rows.filter(r=>!['I','U','D'].includes(gv(r,'class')));
+    res.push(mk('s3_class','필수 필드',18,'class 값 확인 (I/U/D)',bad.length?'error':'ok','auto',bad.length?`${bad.length}건에서 유효하지 않은 값`:'모두 I/U/D',bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),class:gv(r,'class')}))));
+  }
+  if(isSummary && hasField('update_time')) {
+    const pat=/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/;
+    const bad=S.rows.filter(r=>!pat.test(gv(r,'update_time')));
+    res.push(mk('s3_ut','필수 필드',19,'update_time 형식 확인 (YYYY-MM-DD HH:MM:SS)',bad.length?'error':'ok','auto',bad.length?`${bad.length}건 형식 오류`:'모두 정상',bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),update_time:gv(r,'update_time')}))));
+  }
+  return res;
+}
+
+// S4 조건부 필수
+function chkConditional() {
+  const res=[];
+
+  // condition: 허용값
+  if(hasField('condition')) {
+    const valid=new Set(['중고','리퍼','전시','반품','스크래치','']);
+    const bad=S.rows.filter(r=>{const v=gv(r,'condition'); return v&&!valid.has(v);});
+    res.push(mk('s4_cond','조건부 필수',20,'condition 허용값 확인 (중고/리퍼/전시/반품/스크래치)',bad.length?'error':'ok','auto',bad.length?`${bad.length}건에서 허용값 외 값 감지`:'정상',bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),condition:gv(r,'condition')}))));
+  }
+
+  // import_flag/parallel_import/order_made/adult: Y 또는 N 허용 (해당 없으면 공란)
+  ['import_flag','parallel_import','order_made','adult'].forEach((f,i)=>{
+    if(!hasField(f)) return;
+    const bad=S.rows.filter(r=>{const v=gv(r,f); return v&&v!=='Y'&&v!=='N';});
+    res.push(mk(`s4_yn_${f}`,'조건부 필수',[21,22,23,25][i],`${f} 허용값 확인 (Y 또는 N)`,bad.length?'error':'ok','auto',bad.length?`${bad.length}건에서 Y/N 외 값 감지`:'정상 (Y 또는 N)',bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),[f]:gv(r,f)}))));
+  });
+
+  // product_flag: 허용값
+  if(hasField('product_flag')) {
+    const valid=new Set(['도매','렌탈','대여','할부','예약판매','구매대행','']);
+    const bad=S.rows.filter(r=>{const v=gv(r,'product_flag'); return v&&!valid.has(v);});
+    res.push(mk('s4_pf','조건부 필수',24,'product_flag 허용값 확인',bad.length?'error':'ok','auto',bad.length?`${bad.length}건에서 허용값 외 값 감지`:'정상',bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),product_flag:gv(r,'product_flag')}))));
+  }
+
+  // brand/maker: 제어문자, Data Size 50
+  ['brand','maker'].forEach((f,i)=>{
+    if(!hasField(f)) return;
+    const ctrl=S.rows.filter(r=>gv(r,f)&&/[\t\r\n\x00-\x1f]/.test(gv(r,f)));
+    if(ctrl.length) res.push(mk(`s4_ctrl_${f}`,'조건부 필수',[27,28][i],`${f} 제어문자 포함 여부`,'error','auto',`${ctrl.length}건에서 제어문자 감지`,ctrl.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id')}))));
+    const sizeErr=S.rows.filter(r=>gv(r,f).length>50);
+    if(sizeErr.length) res.push(mk(`s4_size_${f}`,'조건부 필수',[27,28][i],`${f} Data Size 확인 (최대 50자)`,'warn','auto',`${sizeErr.length}건에서 50자 초과`,sizeErr.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),글자수:gv(r,f).length}))));
+  });
+
+  // model_number(60자), manufacture_define_number(100자), origin(30자): 제어문자, Data Size
+  [['model_number',60],['manufacture_define_number',100],['origin',30]].forEach(([f,max])=>{
+    if(!hasField(f)) return;
+    const ctrl=S.rows.filter(r=>gv(r,f)&&/[\t\r\n\x00-\x1f]/.test(gv(r,f)));
+    if(ctrl.length) res.push(mk(`s4_ctrl_${f}`,'조건부 필수',26,`${f} 제어문자 포함 여부`,'error','auto',`${ctrl.length}건에서 제어문자 감지`,ctrl.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id')}))));
+    const sizeErr=S.rows.filter(r=>gv(r,f).length>max);
+    if(sizeErr.length) res.push(mk(`s4_size_${f}`,'조건부 필수',26,`${f} Data Size 확인 (최대 ${max}자)`,'warn','auto',`${sizeErr.length}건에서 ${max}자 초과`,sizeErr.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),글자수:gv(r,f).length}))));
+  });
+
+  // card_event: 형식, 카드명 중복, 띄어쓰기, 할인가 정수, Data Size 100
+  if(hasField('card_event')) {
+    const nameDup=[],priceErr=[],spaceErr=[],fmtErr=[];
+    S.rows.forEach(r=>{
+      const v=gv(r,'card_event'); if(!v) return;
+      v.split('|').forEach(e=>{
+        const entry=e.trim(); if(!entry) return;
+        const p=entry.split('^');
+        if(p.length!==2){fmtErr.push({행:r.__row,id:gv(r,'id'),값:entry,사유:'카드명^할인가 형식 아님'}); return;}
+        const [name,price]=[p[0].trim(),p[1].trim()];
+        const half=Math.floor(name.length/2);
+        if(half>0&&name.slice(0,half)===name.slice(half)) nameDup.push({행:r.__row,id:gv(r,'id'),카드명:name,사유:'카드명 중복'});
+        if(/\s/.test(name)) spaceErr.push({행:r.__row,id:gv(r,'id'),카드명:name,사유:'띄어쓰기 포함'});
+        if(!/^\d+$/.test(price)) priceErr.push({행:r.__row,id:gv(r,'id'),할인가:price,사유:'정수 아님'});
+      });
+    });
+    const sizeErr=S.rows.filter(r=>gv(r,'card_event').length>100);
+    res.push(mk('s4_cardfmt','조건부 필수',28,'card_event 형식 확인 (카드명^할인가|...)',fmtErr.length?'error':'ok','auto',fmtErr.length?`${fmtErr.length}건 형식 오류`:'형식 정상',fmtErr.slice(0,5)));
+    res.push(mk('s4_cardname','조건부 필수',28,'card_event 카드명 중복 확인',nameDup.length?'error':'ok','auto',nameDup.length?`${nameDup.length}건 카드명 중복`:'카드명 중복 없음',nameDup.slice(0,5)));
+    res.push(mk('s4_cardspace','조건부 필수',28,'card_event 카드명 띄어쓰기 금지',spaceErr.length?'warn':'ok','auto',spaceErr.length?`${spaceErr.length}건에서 띄어쓰기 감지`:'정상',spaceErr.slice(0,5)));
+    res.push(mk('s4_cardprice','조건부 필수',28,'card_event 할인가 정수 확인 (소수점·% 불가)',priceErr.length?'error':'ok','auto',priceErr.length?`${priceErr.length}건에서 정수 아닌 값`:'모두 정수',priceErr.slice(0,5)));
+    if(sizeErr.length) res.push(mk('s4_cardsize','조건부 필수',28,'card_event Data Size 확인 (최대 100자)','warn','auto',`${sizeErr.length}건에서 100자 초과`,sizeErr.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),글자수:gv(r,'card_event').length}))));
+  }
+
+  // event_words: 제어문자, Data Size 100
+  if(hasField('event_words')) {
+    const ctrl=S.rows.filter(r=>gv(r,'event_words')&&/[\t\r\n\x00-\x1f]/.test(gv(r,'event_words')));
+    if(ctrl.length) res.push(mk('s4_evtctrl','조건부 필수',26,'event_words 제어문자 포함 여부','error','auto',`${ctrl.length}건에서 제어문자 감지`,ctrl.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id')}))));
+    const sizeErr=S.rows.filter(r=>gv(r,'event_words').length>100);
+    if(sizeErr.length) res.push(mk('s4_evtsize','조건부 필수',26,'event_words Data Size 확인 (최대 100자)','warn','auto',`${sizeErr.length}건에서 100자 초과`,sizeErr.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),글자수:gv(r,'event_words').length}))));
+  }
+
+  // coupon: 형식 (일반쿠폰^제휴정률^제휴정액), Data Size 100
+  if(hasField('coupon')) {
+    const err=[];
+    S.rows.forEach(r=>{
+      const v=gv(r,'coupon'); if(!v) return;
+      const p=v.split('^');
+      if(p.length<2){err.push({행:r.__row,id:gv(r,'id'),값:v,사유:'^ 구분자 없음'}); return;}
+      const [general,pctRate,flatAmt]=[(p[0]||'').trim(),(p[1]||'').trim(),(p[2]||'').trim()];
+      if(general&&!/^\d+$/.test(general)&&!general.includes('%')) err.push({행:r.__row,id:gv(r,'id'),값:v,사유:`일반쿠폰 오류: ${general}`});
+      if(pctRate&&!/^\d+(\.\d)?$/.test(pctRate)) err.push({행:r.__row,id:gv(r,'id'),값:v,사유:`제휴정률 오류(소수점 한자리): ${pctRate}`});
+      if(flatAmt&&!/^\d+$/.test(flatAmt)) err.push({행:r.__row,id:gv(r,'id'),값:v,사유:`제휴정액 오류(정수여야 함): ${flatAmt}`});
+    });
+    res.push(mk('s4_coupon','조건부 필수',29,'coupon 형식 확인 (일반쿠폰^제휴정률^제휴정액)',err.length?'error':'ok','auto',err.length?`${err.length}건 형식 오류`:'형식 정상',err.slice(0,5)));
+  }
+
+  // partner_coupon_download: Y 또는 N 허용
+  if(hasField('partner_coupon_download')) {
+    const bad=S.rows.filter(r=>{const v=gv(r,'partner_coupon_download'); return v&&v!=='Y'&&v!=='N';});
+    res.push(mk('s4_pcd2','조건부 필수',30,'partner_coupon_download 허용값 확인 (Y 또는 N)',bad.length?'error':'ok','auto',bad.length?`${bad.length}건에서 Y/N 외 값`:'정상',bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),값:gv(r,'partner_coupon_download')}))));
+  }
+
+  // installation_costs: Y 또는 N 허용
+  if(hasField('installation_costs')) {
+    const bad=S.rows.filter(r=>{const v=gv(r,'installation_costs'); return v&&v!=='Y'&&v!=='N';});
+    res.push(mk('s4_inst','조건부 필수',31,'installation_costs 허용값 확인 (Y 또는 N)',bad.length?'error':'ok','auto',bad.length?`${bad.length}건에서 Y/N 외 값`:'정상',bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),값:gv(r,'installation_costs')}))));
+  }
+
+  // delivery_grade/delivery_detail 양방향 연동 + 착불 문구 + Data Size 100
+  if(hasField('delivery_grade')&&hasField('delivery_detail')) {
+    const fwd=S.rows.filter(r=>gv(r,'delivery_grade')==='Y'&&!gv(r,'delivery_detail'));
+    const bwd=S.rows.filter(r=>gv(r,'delivery_detail')&&gv(r,'delivery_grade')!=='Y');
+    const all=[...fwd.map(r=>({행:r.__row,id:gv(r,'id'),사유:'delivery_grade=Y인데 delivery_detail 없음'})),...bwd.map(r=>({행:r.__row,id:gv(r,'id'),사유:'delivery_detail 있는데 delivery_grade≠Y'}))];
+    res.push(mk('s4_delivery','조건부 필수',32,'delivery_grade ↔ delivery_detail 연동 (양방향)',all.length?'error':'ok','auto',all.length?`${all.length}건 연동 오류`:'양방향 연동 정상',all.slice(0,5)));
+    const codDetailErr=S.rows.filter(r=>{const d=gv(r,'delivery_detail'); if(!d) return false; return d.includes('착불')&&!d.includes('착불 배송비');});
+    res.push(mk('s4_cod_phrase','조건부 필수',32,'delivery_detail 착불 추가금 시 "착불 배송비" 문구 필수',codDetailErr.length?'error':'ok','auto',codDetailErr.length?`${codDetailErr.length}건에서 "착불 배송비" 문구 누락`:'정상',codDetailErr.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),delivery_detail:gv(r,'delivery_detail').substring(0,60)}))));
+    const dtSize=S.rows.filter(r=>gv(r,'delivery_detail').length>100);
+    if(dtSize.length) res.push(mk('s4_dtsize','조건부 필수',32,'delivery_detail Data Size 확인 (최대 100자)','warn','auto',`${dtSize.length}건에서 100자 초과`,dtSize.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),글자수:gv(r,'delivery_detail').length}))));
+  }
+
+  // minimum_purchase_quantity: 1 이상 정수, Data Size 10
+  if(hasField('minimum_purchase_quantity')) {
+    const bad=S.rows.filter(r=>{const v=gv(r,'minimum_purchase_quantity'); if(!v) return false; const n=parseInt(v); return isNaN(n)||n<1||!/^\d+$/.test(v);});
+    res.push(mk('s5_minqty','조건부 필수',33,'minimum_purchase_quantity 값 확인 (1 이상 정수)',bad.length?'error':'ok','auto',bad.length?`${bad.length}건에서 1 미만 또는 정수 아닌 값`:'정상',bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),minimum_purchase_quantity:gv(r,'minimum_purchase_quantity')}))));
+  }
+
+  // review_count: 0 이상 정수, 제어문자 금지
+  if(hasField('review_count')) {
+    const bad=S.rows.filter(r=>{const v=gv(r,'review_count'); if(!v) return false; const n=parseInt(v); return isNaN(n)||n<0||!/^\d+$/.test(v);});
+    res.push(mk('s5_review','조건부 필수',34,'review_count 값 확인 (0 이상 정수)',bad.length?'error':'ok','auto',bad.length?`${bad.length}건에서 0 미만 또는 정수 아닌 값`:'정상',bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),review_count:gv(r,'review_count')}))));
+  }
+
+  // vendor_id: 형식 (제휴사몰명^상품ID), Data Size 500
+  if(hasField('vendor_id')) {
+    const bad=S.rows.filter(r=>{const v=gv(r,'vendor_id'); return v&&!v.includes('^');});
+    res.push(mk('s4_vid','조건부 필수',35,'vendor_id 형식 확인 (제휴사몰명^상품ID)',bad.length?'warn':'ok','auto',bad.length?`${bad.length}건에서 ^ 구분자 없음`:'형식 정상',bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),vendor_id:gv(r,'vendor_id')}))));
+  }
+
+  // seller_id: 영문/숫자/- _ 공백만 허용, Data Size 50
+  if(hasField('seller_id')) {
+    const bad=S.rows.filter(r=>{const v=gv(r,'seller_id'); return v&&!/^[a-zA-Z0-9\-_ ]+$/.test(v);});
+    if(bad.length) res.push(mk('s4_sellerid','조건부 필수',39,'seller_id 허용 문자 확인 (영문/숫자/- _ 공백만)','warn','auto',`${bad.length}건에서 허용 외 문자 감지`,bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),seller_id:gv(r,'seller_id')}))));
+  }
+
+  // point: 출처^포인트액수|..., 포인트액수 0 이상 정수, Data Size 50
+  if(hasField('point')) {
+    const err=[];
+    S.rows.forEach(r=>{
+      const v=gv(r,'point'); if(!v) return;
+      v.split('|').forEach(e=>{
+        const entry=e.trim(); if(!entry) return;
+        const p=entry.split('^');
+        if(p.length!==2){err.push({행:r.__row,id:gv(r,'id'),값:entry,사유:'출처^포인트액수 형식 아님'}); return;}
+        const amt=parseInt(p[1].trim());
+        if(isNaN(amt)||amt<0) err.push({행:r.__row,id:gv(r,'id'),값:entry,사유:`포인트액수 오류(0 이상): ${p[1].trim()}`});
+      });
+    });
+    res.push(mk('s5_point','조건부 필수',45,'point 형식 확인 (출처^포인트액수|...)',err.length?'error':'ok','auto',err.length?`${err.length}건 형식 오류`:'형식 정상',err.slice(0,5)));
+  }
+
+  // option_detail: 옵션명^금액|..., 최대 50건 또는 1000자, Data Size 1000
+  if(hasField('option_detail')) {
+    const err=[];
+    S.rows.forEach(r=>{
+      const v=gv(r,'option_detail'); if(!v) return;
+      if(v.length>1000){err.push({행:r.__row,id:gv(r,'id'),사유:`Data Size 1000자 초과: ${v.length}자`}); return;}
+      v.split('|').forEach(e=>{
+        const entry=e.trim(); if(!entry) return;
+        const p=entry.split('^');
+        if(p.length<2){err.push({행:r.__row,id:gv(r,'id'),값:entry,사유:'옵션명^금액 형식 아님(^ 없음)'}); return;}
+        const amt=p[p.length-1].trim();
+        if(amt&&!/^\d+$/.test(amt)) err.push({행:r.__row,id:gv(r,'id'),값:entry,사유:`금액 정수 아님: ${amt}`});
+      });
+      const cnt=v.split('|').length;
+      if(cnt>50) err.push({행:r.__row,id:gv(r,'id'),사유:`옵션 ${cnt}개 (최대 50개 처리)`});
+    });
+    res.push(mk('s5_opt','조건부 필수',49,'option_detail 형식 확인 (옵션명^금액|..., 최대 50건/1000자)',err.length?'error':'ok','auto',err.length?`${err.length}건 형식 오류`:'형식 정상',err.slice(0,5)));
+  }
+
+  return res;
+}
+
+
+// S5 형식/타입
+function chkFormats() {
+  const res=[];
+  ['price_pc','price_mobile','normal_price','benefit_price','shipping','review_count','minimum_purchase_quantity','cod_shipping'].forEach(f=>{
+    if(!hasField(f)) return;
+    const bad=S.rows.filter(r=>{const v=gv(r,f); return v&&!/^-?\d+$/.test(v);});
+    if(bad.length) res.push(mk(`s5_int_${f}`,'필드값 형식',36,`${f} 정수 타입 확인`,
+      'error','auto',`${bad.length}건에서 정수 아닌 값 감지`,
+      bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),[f]:gv(r,f)}))));
+  });
+
+  if(hasField('shipping')) {
+    const bad=S.rows.filter(r=>{const v=gv(r,'shipping'); if(!v) return false; const n=parseInt(v); return isNaN(n)||(n!==-1&&n!==0&&!(n>=1&&n<=1000000));});
+    res.push(mk('s5_ship','필드값 형식',37,'shipping 유효값 확인 (-1/0/1~1,000,000)',
+      bad.length?'error':'ok','auto',
+      bad.length?`${bad.length}건에서 유효하지 않은 값`:'모두 유효',
+      bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),shipping:gv(r,'shipping')}))));
+
+    // 착불(-1)인데 delivery_grade=Y는 논리 오류
+    // (착불+차등배송비는 shipping=0, delivery_grade=Y, delivery_detail에 착불배송비 내용 입력해야 함)
+    if(hasField('delivery_grade')) {
+      const logicErr=S.rows.filter(r=>gv(r,'shipping')==='-1'&&gv(r,'delivery_grade')==='Y');
+      res.push(mk('s5_ship_logic','필드값 형식',37,
+        'shipping 논리 오류: 착불(-1) + delivery_grade=Y 동시 사용 불가',
+        logicErr.length?'error':'ok','auto',
+        logicErr.length
+          ? `${logicErr.length}건에서 착불인데 차등배송비=Y — 착불+차등배송비는 shipping=0으로 입력해야 함`
+          : '정상',
+        logicErr.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),shipping:gv(r,'shipping'),delivery_grade:gv(r,'delivery_grade')}))));
+    }
+  }
+
+  if(hasField('cod_shipping')&&hasField('shipping')) {
+    // 기존: cod_shipping 있으면 shipping=-1 확인
+    const bad=S.rows.filter(r=>gv(r,'cod_shipping')&&gv(r,'shipping')!=='-1');
+    res.push(mk('s5_cod','필드값 형식',38,'cod_shipping 입력 시 shipping=-1 확인',
+      bad.length?'error':'ok','auto',
+      bad.length?`${bad.length}건에서 cod_shipping 있는데 shipping≠-1`:'정상',
+      bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),shipping:gv(r,'shipping'),cod_shipping:gv(r,'cod_shipping')}))));
+
+    // 추가: shipping=-1인데 cod_shipping이 비어있는 경우 (착불인데 착불배송비 미입력)
+    const missingCod=S.rows.filter(r=>gv(r,'shipping')==='-1'&&!gv(r,'cod_shipping'));
+    res.push(mk('s5_cod_missing','필드값 형식',38,'shipping=-1(착불)인데 cod_shipping 미입력 확인',
+      missingCod.length?'warn':'ok','auto',
+      missingCod.length?`${missingCod.length}건에서 착불인데 착불배송비 미입력`:'정상',
+      missingCod.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),shipping:gv(r,'shipping'),cod_shipping:'공란'}))));
+
+    // 추가: cod_shipping 유효 범위 1~1,000,000
+    const codRange=S.rows.filter(r=>{
+      const v=gv(r,'cod_shipping'); if(!v) return false;
+      const n=parseInt(v);
+      return isNaN(n)||n<1||n>1000000;
+    });
+    res.push(mk('s5_cod_range','필드값 형식',38,'cod_shipping 유효 범위 확인 (1~1,000,000)',
+      codRange.length?'error':'ok','auto',
+      codRange.length?`${codRange.length}건에서 유효 범위 외 값`:'정상',
+      codRange.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),cod_shipping:gv(r,'cod_shipping')}))));
+  }
+
+  ['price_pc','price_mobile','benefit_price','normal_price'].forEach(f=>{
+    if(!hasField(f)) return;
+    const bad=S.rows.filter(r=>/[,₩원\s]/.test(gv(r,f)));
+    if(bad.length) res.push(mk(`s5_pricechar_${f}`,'필드값 형식',39,`${f} 특수문자 포함 여부`,
+      'error','auto',`${bad.length}건에서 특수문자 감지`,
+      bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),[f]:gv(r,f)}))));
+  });
+
+  if(hasField('benefit_price')&&hasField('price_pc')) {
+    const bad=S.rows.filter(r=>{const a=parseInt(gv(r,'benefit_price')),b=parseInt(gv(r,'price_pc')); return !isNaN(a)&&!isNaN(b)&&a>b;});
+    res.push(mk('s5_logic1','필드값 형식',40,'논리 오류: benefit_price ≤ price_pc',
+      bad.length?'error':'ok','auto',
+      bad.length?`${bad.length}건에서 할인가 > 판매가 감지`:'정상',
+      bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),benefit_price:gv(r,'benefit_price'),price_pc:gv(r,'price_pc')}))));
+  }
+  if(hasField('normal_price')&&hasField('price_pc')) {
+    const bad=S.rows.filter(r=>{const a=parseInt(gv(r,'normal_price')),b=parseInt(gv(r,'price_pc')); return !isNaN(a)&&!isNaN(b)&&a<b;});
+    res.push(mk('s5_logic2','필드값 형식',40,'논리 오류: normal_price ≥ price_pc',
+      bad.length?'error':'ok','auto',
+      bad.length?`${bad.length}건에서 정가 < 판매가 감지`:'정상',
+      bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),normal_price:gv(r,'normal_price'),price_pc:gv(r,'price_pc')}))));
+  }
+
+  if(hasField('goods_type')) {
+    const valid=new Set(['DP','HS','DF','MA','']);
+    const bad=S.rows.filter(r=>{const v=gv(r,'goods_type'); return v&&!valid.has(v);});
+    res.push(mk('s5_gt','필드값 형식',42,'goods_type 허용값 확인 (DP/HS/DF/MA)',
+      bad.length?'error':'ok','auto',
+      bad.length?`${bad.length}건에서 허용값 외 감지`:'정상',
+      bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),goods_type:gv(r,'goods_type')}))));
+  }
+
+  if(hasField('barcode')) {
+    const bad=S.rows.filter(r=>{const v=gv(r,'barcode'); return v&&!/^\d{8}$/.test(v)&&!/^\d{13}$/.test(v);});
+    res.push(mk('s5_bc','필드값 형식',43,'barcode 형식 확인 (GTIN-8 또는 GTIN-13)',
+      bad.length?'warn':'ok','auto',
+      bad.length?`${bad.length}건에서 형식 불일치`:'정상',
+      bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),barcode:gv(r,'barcode')}))));
+  }
+
+  if(hasField('gender')) {
+    const valid=new Set(['남성','여성','남녀공용','']);
+    const bad=S.rows.filter(r=>{const v=gv(r,'gender'); return v&&!valid.has(v);});
+    res.push(mk('s5_gender','필드값 형식',46,'gender 허용값 확인',
+      bad.length?'error':'ok','auto',
+      bad.length?`${bad.length}건에서 허용값 외 감지`:'정상 (남성/여성/남녀공용)',
+      bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),gender:gv(r,'gender')}))));
+  }
+
+  if(hasField('age_group')) {
+    const valid=new Set(['유아','아동','청소년','성인','']);
+    const bad=S.rows.filter(r=>{const v=gv(r,'age_group'); return v&&!valid.has(v);});
+    res.push(mk('s5_age','필드값 형식',47,'age_group 허용값 확인',
+      bad.length?'error':'ok','auto',
+      bad.length?`${bad.length}건에서 허용값 외 감지`:'정상 (유아/아동/청소년/성인)',
+      bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),age_group:gv(r,'age_group')}))));
+  }
+
+  if(hasField('fast_delivery')) {
+    const err=[];
+    S.rows.forEach(r=>{
+      const v=gv(r,'fast_delivery'); if(!v) return;
+      const p=v.split('^'), issues=[];
+      if(p.length!==10) issues.push(`구분자(^) ${p.length-1}개 (9개여야 함)`);
+      if(p[2]&&!/^\d{2}:\d{2}$/.test(p[2].trim())) issues.push(`주문마감시간 형식 오류: ${p[2]}`);
+      if(p[7]&&p[7].trim().length>16) issues.push('배송지역정보 16자 초과');
+      if(p[8]&&(isNaN(parseInt(p[8]))||parseInt(p[8])<0)) issues.push('배송비 0 이상 정수 아님');
+      if(issues.length) err.push({행:r.__row,id:gv(r,'id'),사유:issues.join(' / ')});
+    });
+    res.push(mk('s5_fd','필드값 형식',48,'fast_delivery 세부 형식 확인',
+      err.length?'error':'ok','auto',
+      err.length?`${err.length}건 형식 오류`:'형식 정상',err.slice(0,5)));
+  }
+
+  if(hasField('search_tag')) {
+    const cntErr=[], lenErr=[];
+    S.rows.forEach(r=>{
+      const v=gv(r,'search_tag'); if(!v) return;
+      const tags=v.split('|');
+      // 태그 10개 초과
+      if(tags.length>10) cntErr.push({행:r.__row,id:gv(r,'id'),태그수:tags.length,사유:`태그 ${tags.length}개 (10개까지만 처리)`});
+      // 전체 100자 초과
+      if(v.length>100) lenErr.push({행:r.__row,id:gv(r,'id'),글자수:v.length,사유:`전체 ${v.length}자 (100자 초과분 미처리)`});
+    });
+    res.push(mk('s5_st_cnt','필드값 형식',50,'search_tag 태그 개수 확인 (최대 10개)',
+      cntErr.length?'warn':'ok','auto',
+      cntErr.length?`${cntErr.length}건에서 10개 초과`:'정상',cntErr.slice(0,5)));
+    res.push(mk('s5_st_len','필드값 형식',50,'search_tag 전체 길이 확인 (최대 100자)',
+      lenErr.length?'warn':'ok','auto',
+      lenErr.length?`${lenErr.length}건에서 100자 초과`:'정상',lenErr.slice(0,5)));
+    // 어뷰징 키워드: 수동 확인
+    res.push(mk('s5_st_abuse','필드값 형식',50,'search_tag 어뷰징성 키워드 여부',
+      'warn','partial','자동 감지 불가 — 상품과 무관한 키워드 포함 여부 수동 확인 필요',[],'',
+      'search_tag 내용이 상품과 무관한 키워드를 포함하고 있는지 확인'));
+  }
+
+  if(hasField('coordi_id')) {
+    const bad=S.rows.filter(r=>{const v=gv(r,'coordi_id'); return v&&v.includes(',');});
+    res.push(mk('s5_ci','필드값 형식',51,'coordi_id 구분자 확인 (복수 시 | 사용)',
+      bad.length?'warn':'ok','auto',
+      bad.length?`${bad.length}건에서 , 사용 감지 (| 사용해야 함)`:'정상',
+      bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),coordi_id:gv(r,'coordi_id')}))));
+  }
+
+  if(hasField('attribute')) {
+    const bad=S.rows.filter(r=>{const v=gv(r,'attribute'); return v&&!v.includes('^');});
+    res.push(mk('s5_attr','필드값 형식',52,'attribute 구분자 확인 (^ 사용)',
+      bad.length?'warn':'ok','auto',
+      bad.length?`${bad.length}건에서 ^ 없음`:'정상',
+      bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),attribute:gv(r,'attribute')}))));
+  }
+
+  if(hasField('interest_free_event')) {
+    // 형식: 카드명^개월수|카드명^개월수
+    // 개월수: 정수 또는 범위(2~3 형태)
+    const fmtErr=[], ctrlErr=[];
+    S.rows.forEach(r=>{
+      const v=gv(r,'interest_free_event'); if(!v) return;
+      // 제어문자 포함 여부
+      if(/[\t\r\n\x00-\x08\x0b\x0c\x0e-\x1f]/.test(v))
+        ctrlErr.push({행:r.__row,id:gv(r,'id'),값:v.substring(0,40),사유:'제어문자 포함'});
+      v.split('|').forEach(e=>{
+        const entry=e.trim(); if(!entry) return;
+        const p=entry.split('^');
+        if(p.length!==2){
+          fmtErr.push({행:r.__row,id:gv(r,'id'),값:entry,사유:'카드명^개월수 형식 아님'}); return;
+        }
+        const month=p[1].trim();
+        if(!/^\d+(\~\d+)?$/.test(month))
+          fmtErr.push({행:r.__row,id:gv(r,'id'),값:entry,사유:`개월수 형식 오류: ${month}`});
+      });
+    });
+    res.push(mk('s5_ife_fmt','필드값 형식',44,'interest_free_event 형식 확인 (카드명^개월수|...)',
+      fmtErr.length?'error':'ok','auto',
+      fmtErr.length?`${fmtErr.length}건 형식 오류`:'형식 정상 (카드명^개월수|...)',fmtErr.slice(0,5)));
+    res.push(mk('s5_ife_ctrl','필드값 형식',44,'interest_free_event 제어문자 포함 여부',
+      ctrlErr.length?'error':'ok','auto',
+      ctrlErr.length?`${ctrlErr.length}건에서 제어문자 감지`:'제어문자 없음',ctrlErr.slice(0,5)));
+  }
+
+  if(hasField('shipping_settings')) {
+    // 형식: 오늘출발^주문마감시간^배송방법^택배사명^방문수령여부^퀵서비스여부^반품배송비^교환배송비^예상배송일^평균배송일
+    // 구분자(^) 총 9개 (파트 10개) 아니면 처리 안 됨
+    const validMethod = new Set(['택배','일반우편','소포','등기','화물택배','판매자직배송','배송없음','null','']);
+    const err=[];
+    S.rows.forEach(r=>{
+      const v=gv(r,'shipping_settings'); if(!v) return;
+      const p=v.split('^');
+      const issues=[];
+
+      // ① 구분자 9개 (파트 10개) 필수
+      if(p.length!==10){
+        issues.push(`구분자(^) ${p.length-1}개 — 반드시 9개여야 함`);
+        // 구분자 개수가 틀리면 나머지 검증 의미 없으므로 바로 추가
+        err.push({행:r.__row, id:gv(r,'id'), 값:v.substring(0,60), 사유:issues.join(' / ')});
+        return;
+      }
+
+      const [todayShip, cutoff, method, carrier, pickup, quick, returnFee, exchangeFee, estimDay, avgDay]
+        = p.map(x=>x.trim());
+
+      // ② 오늘출발/오늘도착 허용값
+      if(todayShip && !['오늘출발','오늘도착','희망배송일',''].includes(todayShip))
+        issues.push(`오늘출발 값 오류: ${todayShip}`);
+
+      // ③ 주문마감시간: 값 있으면 HH:MM 형식
+      if(cutoff && cutoff!=='null' && !/^\d{2}:\d{2}$/.test(cutoff))
+        issues.push(`주문마감시간 형식 오류(HH:MM): ${cutoff}`);
+
+      // ④ 배송방법 허용값
+      if(method && !validMethod.has(method))
+        issues.push(`배송방법 허용값 외: ${method}`);
+
+      // ⑤ 방문수령/퀵서비스: Y 또는 null만 허용
+      if(pickup && pickup!=='Y' && pickup!=='null' && pickup!=='N')
+        issues.push(`방문수령여부 오류(Y/null): ${pickup}`);
+      if(quick && quick!=='Y' && quick!=='null' && quick!=='N')
+        issues.push(`퀵서비스여부 오류(Y/null): ${quick}`);
+
+      // ⑥ 반품/교환 배송비: 0 이상 정수, 최대 6자리
+      if(returnFee && returnFee!=='null'){
+        const n=parseInt(returnFee);
+        if(isNaN(n)||n<0||String(n).length>6) issues.push(`반품배송비 오류(0 이상 정수 6자리 이내): ${returnFee}`);
+      }
+      if(exchangeFee && exchangeFee!=='null'){
+        const n=parseInt(exchangeFee);
+        if(isNaN(n)||n<0||String(n).length>6) issues.push(`교환배송비 오류(0 이상 정수 6자리 이내): ${exchangeFee}`);
+      }
+
+      // ⑦ 예상배송일: 0~9 정수 (음수 불가, 2자리 이상 불가)
+      if(estimDay && estimDay!=='null'){
+        const n=parseInt(estimDay);
+        if(isNaN(n)||n<0||!/^\d$/.test(estimDay)) issues.push(`예상배송일 오류(0~9 한 자리 정수): ${estimDay}`);
+      }
+
+      // ⑧ 평균배송일: 소수점 한 자리까지
+      if(avgDay && avgDay!=='null'){
+        if(!/^\d+(\.\d)?$/.test(avgDay)) issues.push(`평균배송일 오류(소수점 한 자리까지): ${avgDay}`);
+      }
+
+      if(issues.length) err.push({행:r.__row, id:gv(r,'id'), 값:v.substring(0,60), 사유:issues.join(' / ')});
+    });
+    res.push(mk('s5_shipping_settings','필드값 형식',53,'shipping_settings 세부 형식 확인',
+      err.length?'error':'ok','auto',
+      err.length?`${err.length}건 형식 오류`:'형식 정상',
+      err.slice(0,5)));
+  }
+
+  return res;
+}
+
+// S6 URL
+function chkURLs() {
+  const res=[];
+  ['link','mobile_link','image_link','add_image_link'].forEach(f=>{
+    if(!hasField(f)) return;
+    const fmt=S.rows.filter(r=>{const v=gv(r,f); return v&&!/^https?:\/\//i.test(v);});
+    if(fmt.length) res.push(mk(`s6_fmt_${f}`,'URL 유효성',54,`${f} http/https 형식 확인`,
+      'error','auto',`${fmt.length}건에서 http/https 아님`,
+      fmt.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),[f]:gv(r,f).substring(0,60)}))));
+
+    const enc=S.rows.filter(r=>/[가-힣]/.test(gv(r,f)));
+    res.push(mk(`s6_enc_${f}`,'URL 유효성',55,`${f} 한글 URL 인코딩 확인`,
+      enc.length?'warn':'ok','partial',
+      enc.length?`${enc.length}건에서 한글 포함 — 인코딩 여부 수동 확인 필요`:'한글 미포함',
+      enc.slice(0,3).map(r=>({행:r.__row,id:gv(r,'id'),[f]:gv(r,f).substring(0,60)}))));
+  });
+
+  if(hasField('image_link')) {
+    const bad=S.rows.filter(r=>{
+      const v=gv(r,'image_link'), m=v.match(/(\d+)[x_×](\d+)/i); if(!m) return false;
+      const w=parseInt(m[1]),h=parseInt(m[2]);
+      return w<300||h<300||w>4000||h>4000;
+    });
+    res.push(mk('s6_imgsize','URL 유효성',56,'image_link 이미지 사이즈 확인 (300×300~4000×4000)',
+      bad.length?'warn':'ok','auto',
+      bad.length?`${bad.length}건에서 범위 외 사이즈 감지`:'정상 또는 사이즈 미표기',
+      bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),image_link:gv(r,'image_link').substring(0,60)}))));
+  }
+
+  const samples=S.rows.slice(0,2);
+  res.push(mk('s6_live','URL 유효성',57,'URL 실제 접속 가능 여부 (404 에러)',
+    'manual','manual','네트워크 환경 제한으로 자동 확인 불가 — 수동으로 샘플 2건 확인 필요',
+    samples.map(r=>({id:gv(r,'id'),link:gv(r,'link')})),'','위 샘플 URL을 직접 브라우저에서 열어 404 오류 없는지 확인'));
+  return res;
+}
+
+// S7 공정위
+function chkFairTrade() {
+  const res=[];
+  if(hasField('partner_coupon_download')) {
+    const bad=S.rows.filter(r=>{const v=gv(r,'partner_coupon_download'); return v&&v!=='Y'&&v!=='N';});
+    res.push(mk('s7_pcd','공정위',61,'partner_coupon_download Y/N 확인',
+      bad.length?'error':'ok','auto',
+      bad.length?`${bad.length}건에서 Y/N 외 값`:'정상',
+      bad.slice(0,5).map(r=>({행:r.__row,id:gv(r,'id'),값:gv(r,'partner_coupon_download')}))));
+  }
+  return res;
+}
+
+// ── RENDER RESULTS ────────────────────────────
+function renderResults() {
+  const errors=S.results.filter(r=>r.type==='error').length;
+  const warns =S.results.filter(r=>r.type==='warn').length;
+  const ok    =S.results.filter(r=>r.type==='ok').length;
+  const manual=S.results.filter(r=>r.type==='manual').length;
+
+  document.getElementById('stat-grid').innerHTML=`
+    <div class="stat-card"><div class="stat-num" style="color:var(--text)">${S.results.length}</div><div class="stat-label">전체 항목</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--red)">${errors}</div><div class="stat-label">🔴 오류</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--yellow)">${warns}</div><div class="stat-label">🟡 확인필요</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--green)">${ok}</div><div class="stat-label">✅ 정상</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--purple)">${manual}</div><div class="stat-label">🟣 수동검수</div></div>
+    <div class="stat-card"><div class="stat-num" style="color:var(--text)">${S.rows.length}</div><div class="stat-label">총 데이터 행</div></div>`;
+
+  document.getElementById('result-title').textContent=`검수 결과 — ${S.mallName}`;
+  document.getElementById('result-meta').textContent=`${S.epType==='summary'?'요약EP':'전체EP'} · ${S.rows.length}행 · ${new Date().toLocaleString('ko-KR')}`;
+
+  renderCardPanel();
+  renderList();
+}
+
+function renderCardPanel() {
+  const panel=document.getElementById('card-panel');
+  const chips=document.getElementById('card-chips');
+  if(!hasField('card_event')){panel.classList.add('hidden');return;}
+
+  const cardSet=new Set();
+  S.rows.forEach(r=>{
+    const v=gv(r,'card_event'); if(!v) return;
+    v.split('|').forEach(e=>{
+      const p=e.trim().split('^'); if(!p[0].trim()) return;
+      let name=p[0].trim();
+      const half=Math.floor(name.length/2);
+      if(half>0&&name.slice(0,half)===name.slice(half)) name=name.slice(0,half);
+      cardSet.add(name);
+    });
+  });
+
+  if(!cardSet.size){panel.classList.add('hidden');return;}
+  panel.classList.remove('hidden');
+  chips.innerHTML=[...cardSet].sort().map(n=>
+    `<span style="display:inline-flex;align-items:center;padding:4px 12px;border-radius:99px;background:rgba(79,124,255,.12);border:1px solid rgba(79,124,255,.3);color:var(--accent);font-size:12px;font-weight:500;">💳 ${n}</span>`
+  ).join('')+`<span style="font-size:11px;color:var(--text3);align-self:center;margin-left:4px;">총 ${cardSet.size}개</span>`;
+}
+
+function renderList() {
+  const list=document.getElementById('results-list');
+  const filtered=S.filter==='all'?S.results:S.results.filter(r=>{
+    if(S.filter==='error')  return r.type==='error';
+    if(S.filter==='warn')   return r.type==='warn';
+    if(S.filter==='ok')     return r.type==='ok';
+    if(S.filter==='manual') return r.type==='manual';
+    if(S.filter==='partial')return r.category==='partial';
+    return true;
+  });
+  if(!filtered.length){list.innerHTML='<div class="text-sm" style="text-align:center;padding:40px;color:var(--text3);">해당 필터 항목 없음</div>';return;}
+
+  const grouped={};
+  filtered.forEach(r=>{(grouped[r.section]||(grouped[r.section]=[])).push(r);});
+
+  list.innerHTML=Object.entries(grouped).map(([sec,items])=>`
+    <div style="margin-bottom:8px;">
+      <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;padding:4px 0 6px;">${sec}</div>
+      ${items.map(item=>renderItem(item)).join('')}
+    </div>`).join('');
+}
+
+function typeIcon(t){return{error:'🔴',warn:'🟡',ok:'✅',manual:'🟣'}[t]||'⚪';}
+function typeBadge(t,cat){
+  if(t==='manual') return '<span class="badge badge-manual">수동검수필수</span>';
+  if(cat==='partial') return '<span class="badge badge-info">코드+수동판단</span>';
+  if(t==='error') return '<span class="badge badge-error">오류</span>';
+  if(t==='warn')  return '<span class="badge badge-warn">확인필요</span>';
+  return '<span class="badge badge-ok">정상</span>';
+}
+
+function renderItem(item) {
+  const isOpen=item.type==='error'||item.type==='manual';
+
+  // 샘플 테이블 — 행/id/값/사유 고정 컬럼으로 표준화
+  let sampHtml='';
+  if(item.samples&&item.samples.length){
+    // 모든 샘플을 행/id/값/사유 구조로 정규화
+    const normalized = item.samples.map(s=>{
+      const keys = Object.keys(s);
+      // 행, id 추출
+      const row  = s['행'] !== undefined ? s['행'] : (s['__row'] !== undefined ? s['__row'] : '-');
+      const id   = s['id'] !== undefined ? s['id'] : '-';
+      // 값: 행/id/사유 제외 나머지 첫 번째 값
+      const valKey = keys.find(k=>k!=='행'&&k!=='id'&&k!=='사유'&&k!=='__row');
+      const val  = valKey ? (String(s[valKey]||'') || '공란') : '공란';
+      const reason = s['사유'] || '-';
+      return {행:row, id, 값:val, 사유:reason};
+    });
+    sampHtml=`
+    <div style="margin-top:10px;">
+      <div class="text-xs mb-2">샘플 오류 행 (최대 5건)</div>
+      <table class="sample-table">
+        <thead><tr><th>행</th><th>id</th><th>값</th><th>사유</th></tr></thead>
+        <tbody>${normalized.map(s=>`<tr>
+          <td>${s['행']}</td>
+          <td class="err-val">${String(s['id']).substring(0,30)}</td>
+          <td class="err-val">${String(s['값']).substring(0,60)}</td>
+          <td style="color:var(--yellow);">${String(s['사유']).substring(0,80)}</td>
+        </tr>`).join('')}</tbody>
+      </table></div>`;
+  }
+  const manHtml=item.manualNote?`
+    <div style="margin-top:10px;padding:10px 12px;background:rgba(168,85,247,.08);border:1px solid rgba(168,85,247,.2);border-radius:var(--rs);display:flex;align-items:center;gap:10px;">
+      <input type="checkbox" style="width:15px;height:15px;accent-color:var(--accent);cursor:pointer;" onchange="S.manualChecks['${item.id}']=this.checked" ${S.manualChecks[item.id]?'checked':''}>
+      <span class="text-sm">${item.manualNote}</span>
+      <span style="margin-left:auto;font-size:11px;color:var(--text3);">확인 완료 체크</span>
+    </div>`:'';
+
+  return `<div class="result-section">
+    <div class="result-header ${isOpen?'open':''}" onclick="toggleItem('${item.id}',this)">
+      <div class="result-header-left">${typeIcon(item.type)} <span>${item.title}</span></div>
+      <div class="result-header-right">
+        ${typeBadge(item.type,item.category)}
+        <span style="font-size:11px;color:var(--text3);">${item.message.substring(0,50)}</span>
+        <span style="color:var(--text3);font-size:12px;">${isOpen?'▲':'▼'}</span>
+      </div>
+    </div>
+    <div class="result-body ${isOpen?'open':''}" id="body-${item.id}">
+      <div class="result-detail">
+        <p>${item.message}</p>
+        ${sampHtml}${manHtml}
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleItem(id, header) {
+  const body=document.getElementById('body-'+id);
+  const open=body.classList.toggle('open');
+  header.classList.toggle('open',open);
+  header.querySelector('span:last-child').textContent=open?'▲':'▼';
+}
+
+function toggleAll(open) {
+  document.querySelectorAll('.result-body').forEach(b=>b.classList.toggle('open',open));
+  document.querySelectorAll('.result-header').forEach(h=>{
+    h.classList.toggle('open',open);
+    const arr=h.querySelector('span:last-child');
+    if(arr&&(arr.textContent==='▲'||arr.textContent==='▼')) arr.textContent=open?'▲':'▼';
+  });
+}
+
+function setFilter(btn, f) {
+  S.filter=f;
+  document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderList();
+}
+
+// ── CSV EXPORT ────────────────────────────────
+function exportCSV() {
+  const rows=[['번호','섹션','항목','상태','구분','메시지']];
+  S.results.forEach(r=>rows.push([r.num,r.section,r.title,r.type,r.category,r.message.replace(/\n/g,' ')]));
+  const csv='\uFEFF'+rows.map(r=>r.map(c=>`"${String(c).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=Object.assign(document.createElement('a'),{href:URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),download:`EP검수결과_${S.mallName}_${new Date().toISOString().slice(0,10)}.csv`});
+  a.click();
+  showToast('CSV 다운로드 완료','success');
+}
+
+// ── HISTORY ───────────────────────────────────
+function saveHistory() {
+  const h=JSON.parse(localStorage.getItem('ep_history')||'[]');
+  h.unshift({id:Date.now(),mall:S.mallName,epType:S.epType,fileName:S.fileName||'붙여넣기',
+    rows:S.rows.length,errors:S.results.filter(r=>r.type==='error').length,
+    warns:S.results.filter(r=>r.type==='warn').length,
+    comment: S.comment||'',
+    date:new Date().toLocaleString('ko-KR'),results:S.results});
+  localStorage.setItem('ep_history',JSON.stringify(h.slice(0,50)));
+}
+
+function renderHistory() {
+  const h=JSON.parse(localStorage.getItem('ep_history')||'[]');
+  const list=document.getElementById('history-list');
+  const empty=document.getElementById('history-empty');
+  if(!h.length){list.innerHTML='';empty.classList.remove('hidden');return;}
+  empty.classList.add('hidden');
+  list.innerHTML=h.map(item=>`
+    <div class="history-item">
+      <div>
+        <div style="font-weight:700;font-size:14px;">${item.mall} <span style="font-weight:400;font-size:12px;color:var(--text3);">${item.epType==='summary'?'요약EP':'전체EP'}</span></div>
+        <div class="text-xs" style="font-family:var(--mono);margin-top:2px;">${item.date} · ${item.fileName} · ${item.rows}행</div>
+        ${item.comment?`<div style="margin-top:4px;font-size:12px;color:var(--accent);">💬 ${item.comment}</div>`:''}
+      </div>
+      <div class="flex-gap">
+        <span class="badge badge-error">🔴 ${item.errors}</span>
+        <span class="badge badge-warn">🟡 ${item.warns}</span>
+        <button class="btn btn-secondary btn-sm" onclick="loadHistory(${item.id})">결과 보기</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteHistory(${item.id})">삭제</button>
+      </div>
+    </div>`).join('');
+}
+
+function loadHistory(id) {
+  const h=JSON.parse(localStorage.getItem('ep_history')||'[]').find(i=>i.id===id);
+  if(!h) return;
+  S.results=h.results; S.mallName=h.mall; S.epType=h.epType; S.rows=Array(h.rows).fill({});
+  S.headers=[];
+  renderResults(); navigate('result');
+}
+
+function deleteHistory(id) {
+  const h=JSON.parse(localStorage.getItem('ep_history')||'[]').filter(i=>i.id!==id);
+  localStorage.setItem('ep_history',JSON.stringify(h));
+  renderHistory(); showToast('삭제 완료');
+}
+
+function clearHistory() {
+  if(!confirm('전체 이력을 삭제할까요?')) return;
+  localStorage.removeItem('ep_history');
+  renderHistory(); showToast('전체 이력 삭제 완료');
+}
+
+// ── RESET ─────────────────────────────────────
+function resetAll() {
+  S.rawText=''; S.rows=[]; S.headers=[]; S.fileName='';
+
+  // 파일 input
+  document.getElementById('file-input').value='';
+
+  // 업로드존 초기화
+  dz.classList.remove('uploaded','drag-over');
+  document.getElementById('upload-icon').textContent ='📄';
+  document.getElementById('upload-title').textContent='파일을 드래그하거나 클릭해서 선택';
+  document.getElementById('upload-sub').textContent  ='.txt / .tsv 파일 지원 · 탭 구분 텍스트';
+
+  // 인코딩 배지 초기화
+  resetEncoding();
+
+  // 나머지
+  document.getElementById('paste-area').value='';
+  document.getElementById('mall-name').value='';
+  document.getElementById('progress-area').classList.add('hidden');
+  document.getElementById('progress-fill').style.width='0%';
+
+  showToast('초기화 완료');
+}
+
+// ── TOAST ─────────────────────────────────────
+function showToast(msg,type='success') {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className=`show ${type}`;
+  setTimeout(()=>{t.className='';},2800);
+}
+</script>
+</body>
+</html>
